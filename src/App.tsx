@@ -500,6 +500,11 @@ export default function App() {
       setError("Please specify who you are creating this song for.");
       return;
     }
+    const wordCount = context.trim() === "" ? 0 : context.trim().split(/\s+/).length;
+    if (wordCount > 500) {
+      setError("Please keep your Context & Special Story under 500 words before strumming.");
+      return;
+    }
     setError("");
     setIsGenerating(true);
     setIsRendering(true);
@@ -1055,16 +1060,25 @@ export default function App() {
                       </label>
                       <textarea
                         id="context_story_textarea"
-                        rows={3}
-                        maxLength={300}
-                        placeholder="e.g. It's her 16th birthday and I want her to know she has the heart of a warrior. She loves bright mornings and ocean waves."
+                        rows={5}
+                        placeholder="e.g., Pour out your heart here up to 500 words. Describe their character, covenant promises, or a special milestone moment..."
                         value={context}
                         onChange={(e) => setContext(e.target.value)}
-                        className="w-full bg-black/90 border-2 border-[#C5A880] rounded-xl px-4 py-3 text-[#FAF9F6] placeholder-white/30 focus:outline-none focus:border-[#FFD700] transition-all font-sans text-[1.1rem] md:text-[1.3rem] font-medium resize-none custom-input"
+                        className={`w-full bg-black/90 border-2 rounded-xl px-4 py-3 text-[#FAF9F6] placeholder-white/30 focus:outline-none transition-all font-sans text-[1.1rem] md:text-[1.3rem] font-medium resize-y min-h-[140px] custom-input ${
+                          (context.trim() === "" ? 0 : context.trim().split(/\s+/).length) > 500
+                            ? "border-red-500 focus:border-red-500 text-red-100"
+                            : "border-[#C5A880] focus:border-[#FFD700]"
+                        }`}
                       />
-                      <div className="flex justify-between items-center text-xs text-white/50 font-mono">
-                        <span>Include ocean, morning, hero prompts...</span>
-                        <span>{context.length} / 300</span>
+                      <div className="flex justify-between items-center text-xs font-mono">
+                        <span className="text-white/50">Include ocean, morning, hero prompts...</span>
+                        <span className={
+                          (context.trim() === "" ? 0 : context.trim().split(/\s+/).length) > 500
+                            ? "text-red-400 font-bold"
+                            : "text-white/50"
+                        }>
+                          {context.trim() === "" ? 0 : context.trim().split(/\s+/).length} / 500 words
+                        </span>
                       </div>
                     </div>
 
