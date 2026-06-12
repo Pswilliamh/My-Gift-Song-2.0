@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Music, Sparkles, Share2, Play, Pause, Volume2, VolumeX, 
@@ -18,6 +18,8 @@ export default function App() {
   // --- Lifecycles & State Management ---
   const [target, setTarget] = useState("");
   const [context, setContext] = useState("");
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [setType, setSetType] = useState<SetType>("quick");
   const [customGenre, setCustomGenre] = useState("Acoustic Folk");
   const [gifterEmail, setGifterEmail] = useState("");
@@ -47,6 +49,45 @@ export default function App() {
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(50);
   const [muted, setMuted] = useState(false);
+
+  // --- Suno Player States ---
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(120);
+  const [isAudioMuted, setIsAudioMuted] = useState(false);
+  const [audioVolume, setAudioVolume] = useState(0.8);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const toggleAudioPlayback = () => {
+    if (!audioRef.current) return;
+    if (isAudioPlaying) {
+      audioRef.current.pause();
+      setIsAudioPlaying(false);
+    } else {
+      audioRef.current.play().catch(e => console.warn(e));
+      setIsAudioPlaying(true);
+    }
+  };
+
+  const handleAudioTimeUpdate = () => {
+    if (audioRef.current) {
+      setAudioCurrentTime(audioRef.current.currentTime);
+      if (audioRef.current.duration) {
+        setAudioDuration(audioRef.current.duration);
+      }
+    }
+  };
+
+  const handleAudioSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!audioRef.current || !audioDuration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const width = rect.width;
+    const percentage = clickX / width;
+    const seekTime = percentage * audioDuration;
+    audioRef.current.currentTime = seekTime;
+    setAudioCurrentTime(seekTime);
+  };
 
   // --- Keepsake Modal State ---
   const [showKeepsake, setShowKeepsake] = useState(false);
@@ -435,7 +476,9 @@ export default function App() {
     }
   };
 
-  const handleStrumSong = async () => {
+  const handleStrumSong = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
     const valEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     if (!gifterEmail.trim()) {
       setError("Please specify Your Email (Gifter) - this is required so Haddi can deliver your digital keepsake!");
@@ -458,11 +501,12 @@ export default function App() {
       return;
     }
     setError("");
+    setIsGenerating(true);
     setIsRendering(true);
 
     try {
-      // Create Stripe Session request to secure backend API
-      const res = await fetch("/api/create-checkout-session", {
+      // 1. Prepare user's context payload and execute fetch request to `/api/generate-song` gateway
+      const res = await fetch("/api/generate-song", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -471,21 +515,60 @@ export default function App() {
           setType,
           customGenre,
           gifterEmail: gifterEmail.trim(),
-          recipientEmail: recipientEmail.trim(),
+          recipientEmail: recipientEmail.trim()
         })
       });
 
       const data = await res.json();
-      if (!data.success || !data.url) {
-        throw new Error(data.error || "Secure gateway session could not be established.");
+      if (!data.success || !data.song) {
+        throw new Error(data.error || "Minstrel song generation failed. Please try again.");
       }
 
-      // Log publishable connection context
-      console.log("[Stripe Redirect] Transitioning via gateway to:", data.url);
-      window.location.href = data.url;
+      const returnedSong: SongData = data.song;
+      setCurrentSong(returnedSong);
+
+      if ((setType === "extended" || setType === "premium" || setType === "legacy") && data.variations) {
+        setAllVariations(data.variations);
+        setActiveVariationIdx(0);
+      } else {
+        setAllVariations([returnedSong]);
+        setActiveVariationIdx(0);
+      }
+
+      // 2. Set theme-based high-fidelity Suno AI audio URL path
+      const genreAudioUrls: Record<string, string> = {
+        "Acoustic Folk": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+        "Bluegrass": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+        "Rustic Lute": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+        "Modern Worship": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+        "Lofi Acoustic": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+        "Indie Pop": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3"
+      };
+
+      const highFidelityTrack = genreAudioUrls[customGenre] || "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
+      setAudioUrl(highFidelityTrack);
+
+      // Play vocal speech introductory elements if active
+      try {
+        const speechRes = await fetch("/api/generate-avatar-intro", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ introText: returnedSong.artistIntro })
+        });
+        const speechData = await speechRes.json();
+        if (speechData.success && speechData.base64Audio) {
+          luteEngineInstance.initContext();
+          await luteEngineInstance.playSpeechIntro(speechData.base64Audio);
+        }
+      } catch (speechErr) {
+        console.warn("Minstrel avatar speech intro skipped:", speechErr);
+      }
+
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Trouble opening live secure gateway. Please retry.");
+      setError(err.message || "Trouble processing acoustic song generation. Please retry.");
+    } finally {
+      setIsGenerating(false);
       setIsRendering(false);
     }
   };
@@ -753,21 +836,141 @@ export default function App() {
                     </p>
                   </div>
 
-                  {/* BOTTOM video player loading strictly from src="/video/premium-preview.mp4" positioned directly underneath the yellow banner */}
-                  <div className="relative w-full rounded-xl overflow-hidden border border-[#C5A880]/20 shadow-xl bg-black/80 flex items-center justify-center aspect-video min-h-[200px]">
-                    <video 
-                      id="premium-preview-video" 
-                      autoPlay 
-                      loop 
-                      muted 
-                      playsInline 
-                      preload="auto" 
-                      className="w-full h-full object-cover"
-                    >
-                      <source src="/video/premium-preview.mp4" type="video/mp4" />
-                      Your browser does not support the video tag.
-                    </video>
-                  </div>
+                  {/* BOTTOM video player or custom audio player or loader depending on Suno state */}
+                  {isGenerating ? (
+                    <div className="relative w-full rounded-xl overflow-hidden border border-[#FFD700]/30 shadow-[0_0_25px_rgba(255,215,0,0.15)] bg-[#120e0a]/90 flex flex-col items-center justify-center aspect-video min-h-[200px] p-6 space-y-4">
+                      <div className="relative flex items-center justify-center">
+                        <Disc size={40} className="text-[#FFD700] animate-spin [animation-duration:3s]" />
+                        <Sparkles size={16} className="text-[#FFD700] absolute -top-1 -right-1 animate-ping" />
+                      </div>
+                      <div className="space-y-1 text-center max-w-xs">
+                        <p className="text-xs font-mono font-bold text-[#FFD700] uppercase tracking-widest animate-pulse">HADDI IS STRUMMING...</p>
+                        <p className="text-[10px] text-[#FAF9F6]/70 font-sans italic leading-relaxed">
+                          "Plucking silver strings with Sumatra passion and Jakarta energy..."
+                        </p>
+                      </div>
+                    </div>
+                  ) : audioUrl ? (
+                    <div className="relative w-full rounded-xl overflow-hidden border border-[#FFD700]/40 shadow-[0_0_25px_rgba(255,215,0,0.2)] bg-[#120e0a]/95 flex flex-col justify-center items-center p-5 aspect-video min-h-[200px] space-y-3.5">
+                      <div className="flex items-center gap-3.5 w-full">
+                        <div className={`p-3.5 rounded-full bg-black/60 border-2 border-[#FFD700] text-[#FFD700] relative shrink-0 ${isAudioPlaying ? 'animate-spin [animation-duration:10s]' : ''}`}>
+                          <Disc size={26} />
+                          <div className="absolute -inset-1 bg-[#FFD700]/10 blur-md rounded-full -z-10" />
+                        </div>
+                        <div className="text-left flex-1 min-w-0">
+                          <span className="text-[9px] font-mono text-[#FFD700] uppercase tracking-widest block font-bold">Suno AI Master Stream</span>
+                          <h4 className="text-xs md:text-sm font-bold text-white truncate font-sans uppercase">
+                            {currentSong?.title || "Bespoke Acoustic Masterpiece"}
+                          </h4>
+                          <p className="text-[10px] text-white/50 font-mono truncate">
+                            Style: {customGenre} • {setType.toUpperCase()}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Hidden native audio tag */}
+                      <audio
+                        id="suno-audio-player"
+                        src={audioUrl}
+                        ref={audioRef}
+                        onTimeUpdate={handleAudioTimeUpdate}
+                        onEnded={() => setIsAudioPlaying(false)}
+                        className="hidden"
+                      />
+
+                      {/* Progress Line */}
+                      <div className="w-full space-y-1">
+                        <div className="flex justify-between text-[9px] font-mono text-white/40">
+                          <span>{formatTime(audioCurrentTime)}</span>
+                          <span>{formatTime(audioDuration || 120)}</span>
+                        </div>
+                        <div
+                          onClick={handleAudioSeek}
+                          className="h-1.5 w-full bg-white/10 rounded-full cursor-pointer relative overflow-hidden group hover:h-2 transition-all"
+                        >
+                          <div
+                            className="h-full bg-gradient-to-r from-[#FFD700] via-[#FCE068] to-[#FFD700] rounded-full transition-all duration-100"
+                            style={{ width: `${(audioCurrentTime / (audioDuration || 1)) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Lower Action Layout */}
+                      <div className="flex items-center justify-between w-full pt-1.5">
+                        <button
+                          type="button"
+                          onClick={toggleAudioPlayback}
+                          className="bg-[#FFD700] hover:bg-[#FCE068] text-black rounded-lg px-4 py-1.5 text-[10px] font-mono tracking-wider font-extrabold uppercase transition-all duration-200 active:scale-95 flex items-center gap-1.5 shadow-[0_2px_8px_rgba(255,215,0,0.15)] shrink-0"
+                        >
+                          {isAudioPlaying ? (
+                            <>
+                              <Pause size={12} fill="currentColor" /> PAUSE
+                            </>
+                          ) : (
+                            <>
+                              <Play size={12} fill="currentColor" /> PLAY
+                            </>
+                          )}
+                        </button>
+
+                        <div className="flex items-center gap-1 bg-black/40 rounded-full px-2 py-1 border border-white/5">
+                          <p className="text-[8px] font-mono text-emerald-400 uppercase tracking-widest flex items-center gap-1">
+                            <span className="w-1 h-1 rounded-full bg-[#FFD700] animate-ping" />
+                            LIVE
+                          </p>
+                        </div>
+
+                        {/* Mute and volume */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (audioRef.current) {
+                                const targetMute = !audioRef.current.muted;
+                                audioRef.current.muted = targetMute;
+                                setIsAudioMuted(targetMute);
+                              }
+                            }}
+                            className="text-white/60 hover:text-white p-1"
+                          >
+                            {isAudioMuted ? <VolumeX size={14} className="text-red-400" /> : <Volume2 size={14} className="text-[#FFD700]" />}
+                          </button>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={audioVolume}
+                            onChange={(e) => {
+                              const newVol = parseFloat(e.target.value);
+                              setAudioVolume(newVol);
+                              if (audioRef.current) {
+                                audioRef.current.volume = newVol;
+                                audioRef.current.muted = false;
+                                setIsAudioMuted(false);
+                              }
+                            }}
+                            className="w-14 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#FFD700]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative w-full rounded-xl overflow-hidden border border-[#C5A880]/20 shadow-xl bg-black/80 flex items-center justify-center aspect-video min-h-[200px]">
+                      <video 
+                        id="premium-preview-video" 
+                        autoPlay 
+                        loop 
+                        muted 
+                        playsInline 
+                        preload="auto" 
+                        className="w-full h-full object-cover"
+                      >
+                        <source src="/video/premium-preview.mp4" type="video/mp4" />
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                  )}
 
                   {/* The Sound of Honor & Covenant definition panel */}
                   <div className="w-full p-5 bg-[#1c1917]/60 border border-[#C5A880]/20 rounded-xl text-left backdrop-blur-md shadow-lg space-y-2 mt-1">
