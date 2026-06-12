@@ -1,0 +1,6 @@
+{
+  "name": "mysong.ai",
+  "description": "An interactive gold-themed boutique song-generation studio. It transforms personalized names, stories, and dedication contexts into dynamic, acoustic folk-style compositions featuring simulated visualisers, real-time karaoke chords, and spoken introductions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

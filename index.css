@@ -1,0 +1,393 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom CSS Scrollbar for Bronze Canvas */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 5px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgba(197, 168, 128, 0.25);
+  border-radius: 99px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(197, 168, 128, 0.5);
+}
+
+/* Stunning radiating gold pulse buttons */
+.gold-glow-button {
+  background: linear-gradient(135deg, #FFD700 0%, #C5A880 50%, #B8860B 100%);
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.gold-glow-button:hover {
+  box-shadow: 0 0 25px rgba(255, 215, 0, 0.75), 0 0 4px #FFD700;
+  transform: translateY(-1px);
+}
+.gold-glow-button:active {
+  transform: translateY(1px);
+}
+
+/* Aesthetic gold pulse effect */
+@keyframes gold-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(255, 215, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0);
+  }
+}
+.gold-avatar-glow {
+  animation: gold-pulse 2.2s infinite;
+}
+
+/* Simulated Audio visualizer column growth */
+@keyframes pillar-pulse {
+  0%, 100% {
+    transform: scaleY(0.4);
+  }
+  50% {
+    transform: scaleY(1.0);
+  }
+}
+.visualizer-pillar {
+  animation: pillar-pulse 1.2s ease-in-out infinite;
+  transform-origin: bottom;
+}
+
+/* Subtle background stars drift */
+@keyframes ambient-float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.25;
+  }
+  50% {
+    transform: translateY(-8px) rotate(180deg);
+    opacity: 0.5;
+  }
+}
+.ambient-decor {
+  animation: ambient-float 8s ease-in-out infinite;
+}
+
+/* Custom background image layering matching user asset requests with high-end dark music backdrops */
+.main-studio-bg {
+  background-color: #0c0b0a; /* The foundational grounding color */
+  
+  /* Layer 1: Eased back to 30% black opacity (rgba alpha set to 0.30) */
+  /* Layer 2: Seamlessly displays your newly rescaled image path with robust fallback paths */
+  background-image: 
+    linear-gradient(to bottom, rgba(12, 11, 10, 0.30) 0%, rgba(12, 11, 10, 0.35) 100%),
+    url('/images/guiter-rescaled-9music.png'),
+    url('/public/images/guiter-rescaled-9music.png'),
+    url('/images/guiter-rescaled-music.png'),
+    url('/public/images/guiter-rescaled-music.png'),
+    url('https://images.unsplash.com/photo-1510915361894-db8b60106cb1?q=80&w=1920&auto=format&fit=crop');
+  
+  /* Keeps the street scene perfectly framed and responsive across all screens */
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* 1. THE HEADLINE TEXT SHADOW */
+/* Adds a deep, crisp shadow that cleanly separates the white text from the background lights */
+.main-headline h1, .main-headline h2 {
+    font-size: 2.6rem !important;
+    line-height: 1.3;
+    font-weight: 800;
+    color: #FFFFFF;
+    
+    /* 🌟 The Drop Shadow Engine */
+    text-shadow: 2px 4px 12px rgba(0, 0, 0, 0.95), 
+                 0px 0px 20px rgba(0, 0, 0, 0.6);
+}
+
+/* 2. THE PARAGRAPH BACKGROUND SHIELD */
+/* Wraps the subtext in a beautifully soft, highly transparent smoked glass shield */
+.main-headline p {
+    font-size: 1.2rem !important;
+    line-height: 1.6;
+    color: #F5F5F0; /* Soft Ivory White for high readability */
+    
+    /* 🌟 The Translucent Protective Shield */
+    background: rgba(12, 11, 10, 0.55) !important; /* Smoked charcoal at 55% thickness */
+    backdrop-filter: blur(6px); /* Softly diffuses the busy background detail underneath the text */
+    -webkit-backdrop-filter: blur(6px);
+    
+    padding: 20px 24px !important; /* Gives the words perfect breathing room inside their shield */
+    border-radius: 12px; /* Smooth, rounded corners that match the input panels */
+    border: 1px solid rgba(255, 215, 0, 0.1); /* An incredibly faint golden edge to frame it */
+    margin-top: 20px;
+    
+    /* Subtle outer shadow so the box sits gracefully over the street image */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); 
+}
+
+.window label {
+    font-size: 1.3rem !important; /* Clear, balanced section headers */
+    color: #FFD700; /* Street Gold */
+    font-weight: 700;
+}
+
+.custom-input {
+    font-size: 1.2rem !important; /* Comfortable, natural typing size */
+    padding: 16px !important;
+}
+
+/* 2. THE TWO-SECTION DESKTOP SPLIT */
+.studio-workspace {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 30px;
+    padding: 20px 15px;
+}
+
+@media (min-width: 1024px) {
+    .studio-workspace {
+        grid-template-columns: 1.1fr 1.2fr; /* Opens up the horizontal real estate */
+        gap: 50px;
+        align-items: flex-start;
+        padding: 40px;
+    }
+    .main-headline {
+        align-self: flex-start;
+        margin-top: 0px;
+    }
+}
+
+/* 📱 BREAKING THE ANDROID VERTICAL LOOK (The Right Panel) */
+.right-interaction-box {
+    background: rgba(20, 18, 15, 0.45) !important; /* Elegant 45% translucent smoked glass */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.25) !important;
+    border-radius: 16px;
+    padding: 35px !important;
+    width: 100%;
+}
+
+/* 🎚️ HORIZONTAL TRACK SET CHOICES (Quick Strum, Full Set, Encore) */
+.dedicated-set-options {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 20px;
+    width: 100%;
+}
+
+@media (min-width: 640px) {
+    .dedicated-set-options {
+        grid-template-columns: 1fr 1fr 1fr; /* Pushes the 3 pricing tiers into a beautiful, wide side-by-side row */
+    }
+}
+
+/* Tuning the cards to look like spacious desktop modules */
+.frequency-card {
+    background: rgba(12, 11, 10, 0.6) !important; /* Two-tone contrast inside the transparent glass */
+    border: 1px solid rgba(255, 215, 0, 0.15) !important;
+    border-radius: 12px;
+    padding: 20px !important;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 160px; /* Gives them a solid, tall, premium desktop height */
+    transition: all 0.3s ease;
+}
+
+.frequency-card:hover {
+    border-color: rgba(255, 215, 0, 0.4) !important;
+    background: rgba(12, 11, 10, 0.75) !important;
+    transform: translateY(-2px);
+}
+
+.frequency-card.active {
+    background: rgba(37, 30, 25, 0.8) !important;
+    border: 2px solid rgba(255, 215, 0, 0.8) !important;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.2) !important;
+}
+
+/* 3. LIGHTENING THE BOXES (High Transparency Two-Tone Look) */
+.input-panel-container {
+    /* Replaced the heavy dark brown with a highly transparent, frosted glass layer */
+    background: rgba(20, 18, 15, 0.45) !important; /* Lowered to 45% thickness so the image pop behind it */
+    backdrop-filter: blur(12px); /* Gives it that premium, smooth crystalline finish */
+    -webkit-backdrop-filter: blur(12px);
+    
+    border: 1px solid rgba(255, 215, 0, 0.25) !important; /* Thin, elegant gold-leaf border */
+    border-radius: 16px;
+    padding: 30px !important;
+}
+
+/* Kinetic Audio Accents: Floating Note Stream Animation */
+.music-note-stream {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.mural-video-container {
+    margin-top: 25px;
+    width: 100%;
+    max-width: 480px; /* Perfectly sized so it doesn't spill over the center gap */
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    
+    /* 🌟 Borderless & Subtle Energy Glow */
+    border: none !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+.mural-video-container video {
+    width: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+/* Elegant subtitle text baked gracefully onto the bottom of the video frame */
+.video-caption-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(to top, rgba(12, 11, 10, 0.9) 0%, rgba(12, 11, 10, 0.4) 100%);
+    color: #FFD700; /* Radiant Street Gold */
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 15px;
+    letter-spacing: 0.5px;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.8);
+}
+
+.music-note-stream .note-item {
+  position: absolute;
+  color: rgba(255, 215, 0, 0.45);
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+  font-size: 2.5rem;
+  left: -5%;
+  opacity: 0;
+  animation: drift 14s linear infinite;
+  user-select: none;
+}
+
+@keyframes drift {
+  0% {
+    left: -5%;
+    opacity: 0;
+    transform: translateY(0) rotate(0deg) scale(0.8);
+  }
+  12% {
+    opacity: 1;
+    transform: translateY(-8px) rotate(45deg) scale(1);
+  }
+  88% {
+    opacity: 1;
+    transform: translateY(12px) rotate(315deg) scale(1.1);
+  }
+  100% {
+    left: 105%;
+    opacity: 0;
+    transform: translateY(0) rotate(360deg) scale(0.8);
+  }
+}
+
+/* Highlights "Acoustic Song" beautifully */
+.highlight-gold {
+    background-color: rgba(255, 215, 0, 0.25) !important; /* Elegant 25% transparent golden-yellow glow */
+    padding: 2px 10px;
+    border-radius: 6px;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3); /* Soft frequency resonance around the highlight */
+    display: inline-block;
+}
+
+.studio-footer {
+    width: 100%;
+    text-align: center;
+    padding: 30px 0;
+    margin-top: 50px;
+    border-top: 1px solid rgba(255, 215, 0, 0.1); /* Very faint golden dividing line */
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.footer-text {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.gold-text {
+    color: #FFD700;
+    font-weight: 600;
+}
+
+.affiliate-link {
+    color: rgba(169, 169, 161, 0.6); /* Soft muted gray so it doesn't distract */
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.affiliate-link:hover {
+    color: #FFD700; /* Lights up with Street Gold when hovered */
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+
+/* 🎨 STYLING THE DUAL-THEME GRID CONTAINER */
+.style-grid-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* Forms a clean, balanced 3x2 grid layout on desktop */
+    gap: 12px;
+    width: 100%;
+}
+
+.style-card {
+    background: rgba(12, 11, 10, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 8px;
+    padding: 12px;
+    color: rgba(169, 169, 161, 0.8);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* Radiant Gold Focus for Selected Styles */
+.style-card.active, .style-card:hover {
+    border-color: #FFD700;
+    color: #FFD700;
+    background: rgba(255, 215, 0, 0.05) !important;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.15);
+}
+
+/* Subtle visual tag indicating a modern production style */
+.style-card.contemporary {
+    border-color: rgba(255, 215, 0, 0.1);
+    background: rgba(20, 18, 15, 0.4) !important;
+}
+
+
+
