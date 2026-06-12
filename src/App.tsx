@@ -773,7 +773,7 @@ export default function App() {
               </div>
 
               {/* Top Section: Side-by-Side 50/50 Layout for Intro Text & Video/Form */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch p-6 rounded-2xl bg-[#0c0b0a]/70 border border-[#C5A880]/15 backdrop-blur-md shadow-2xl max-w-[1100px] mx-auto w-full">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 items-stretch p-6 rounded-2xl bg-[#0c0b0a]/70 border border-[#C5A880]/15 backdrop-blur-md shadow-2xl max-w-[1100px] mx-auto w-full">
                 
                 {/* Left Side: Centered Smoked Charcoal Greeting Text Block & Flagship Video */}
                 <div className="flex flex-col justify-start items-center text-center space-y-5 p-6 md:p-8 rounded-xl bg-[#121110]/95 border border-[#C5A880]/15 h-full">
@@ -1055,7 +1055,7 @@ export default function App() {
 
                     {/* [2. THE CONTEXT] */}
                     <div className="space-y-2">
-                      <label className="text-[1.1rem] md:text-[1.3rem] font-mono text-[#FFD700] uppercase tracking-widest flex items-center gap-2 font-semibold">
+                      <label className="text-sm md:text-md font-mono text-[#FFD700] uppercase tracking-widest flex items-center gap-2 font-semibold">
                         <Calendar size={16} /> The Context & Special Story
                       </label>
                       <textarea
@@ -1064,7 +1064,7 @@ export default function App() {
                         placeholder="e.g., Pour out your heart here up to 500 words. Describe their character, covenant promises, or a special milestone moment..."
                         value={context}
                         onChange={(e) => setContext(e.target.value)}
-                        className={`w-full bg-black/90 border-2 rounded-xl px-4 py-3 text-[#FAF9F6] placeholder-white/30 focus:outline-none transition-all font-sans text-[1.1rem] md:text-[1.3rem] font-medium resize-y min-h-[140px] custom-input ${
+                        className={`w-full bg-black/95 border-2 rounded-xl px-3.5 py-2.5 text-[#FAF9F6] text-xs sm:text-sm leading-relaxed placeholder-white/30 focus:outline-none transition-all font-sans font-normal resize-y min-h-[120px] custom-input ${
                           (context.trim() === "" ? 0 : context.trim().split(/\s+/).length) > 500
                             ? "border-red-500 focus:border-red-500 text-red-100"
                             : "border-[#C5A880] focus:border-[#FFD700]"
