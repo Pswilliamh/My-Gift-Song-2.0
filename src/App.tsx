@@ -11,8 +11,7 @@ import {
   Disc, Star, Phone, Instagram, Send, Info, Check, Copy, X, Clock
 } from "lucide-react";
 import { SongData, SetType, LyricSection } from "./types";
-import { LyricCanvas } from "./components/LyricCanvas";
-import { luteEngineInstance } from "./components/AudioEngine";
+
 
 export default function App() {
   // --- Lifecycles & State Management ---
@@ -792,6 +791,7 @@ export default function App() {
                     <video 
                       id="haddi-video" 
                       ref={introVideoRef}
+                      src="/video/song-gift.mp4"
                       autoPlay 
                       loop 
                       muted={introVideoMuted} 
@@ -964,6 +964,7 @@ export default function App() {
                     <div className="relative w-full rounded-xl overflow-hidden border border-[#C5A880]/20 shadow-xl bg-black/80 flex items-center justify-center aspect-video min-h-[200px]">
                       <video 
                         id="premium-preview-video" 
+                        src="/video/premium-preview.mp4"
                         autoPlay 
                         loop 
                         muted 
@@ -995,7 +996,7 @@ export default function App() {
                 </div>
 
                 {/* Right Side: Interactive Studio Form */}
-                <div className="input-panel-container window relative right-interaction-box w-full p-6 bg-[#0c0b0a]/40 border border-[#C5A880]/15 rounded-xl flex flex-col justify-between h-full">
+                <div className="input-panel-container window relative right-interaction-box w-full p-6 bg-[#0c0b0a]/40 border border-[#C5A880]/15 rounded-xl flex flex-col justify-between min-h-full h-auto">
                   
                   {/* Decorative Frame */}
                   <div className="absolute top-3 left-3 w-3 h-3 border-t border-l border-[#C5A880]/30 rounded-tl"></div>
