@@ -11,7 +11,7 @@ import {
   Disc, Star, Phone, Instagram, Send, Info, Check, Copy, X, Clock
 } from "lucide-react";
 import { SongData, SetType, LyricSection } from "./types";
-import { LyricCanvas } from "./lyricCanvas";
+import { LyricCanvas } from "./components/LyricCanvas";
 import { luteEngineInstance } from "./components/AudioEngine";
 
 export default function App() {
