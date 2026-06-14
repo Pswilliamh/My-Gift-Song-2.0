@@ -792,7 +792,7 @@ export default function App() {
                     <video 
                       id="haddi-video" 
                       ref={introVideoRef}
-                      src="https://docs.google.com/uc?export=download&id=1H7bdSkULkzoNQGqqno26_KJzAPsZUPL2"
+                      src="/video/song-gift.mp4"
                       autoPlay 
                       loop 
                       muted={introVideoMuted} 
@@ -802,7 +802,7 @@ export default function App() {
                       crossOrigin="anonymous"
                       className="w-full h-full object-cover"
                     >
-                      <source src="https://docs.google.com/uc?export=download&id=1H7bdSkULkzoNQGqqno26_KJzAPsZUPL2" type="video/mp4" />
+                      <source src="/video/song-gift.mp4" type="video/mp4" />
                       Your browser does not support the video tag.
                     </video>
 
@@ -967,7 +967,7 @@ export default function App() {
                     <div className="relative w-full rounded-xl overflow-hidden border border-[#C5A880]/20 shadow-xl bg-black/80 flex items-center justify-center aspect-video min-h-[200px]">
                       <video 
                         id="premium-preview-video" 
-                        src="https://docs.google.com/uc?export=download&id=1dvyq1PS79s4e3GZlcDxZ3tK2lGKktyiC"
+                        src="/video/premium-preview.mp4"
                         autoPlay 
                         loop 
                         muted 
@@ -977,7 +977,7 @@ export default function App() {
                         crossOrigin="anonymous"
                         className="w-full h-full object-cover"
                       >
-                        <source src="https://docs.google.com/uc?export=download&id=1dvyq1PS79s4e3GZlcDxZ3tK2lGKktyiC" type="video/mp4" />
+                        <source src="/video/premium-preview.mp4" type="video/mp4" />
                         Your browser does not support the video tag.
                       </video>
                     </div>
