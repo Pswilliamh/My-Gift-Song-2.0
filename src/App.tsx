@@ -103,10 +103,12 @@ export default function App() {
   const introVideoRef = useRef<HTMLVideoElement | null>(null);
 
   const toggleMinstrelAudio = () => {
-    if (introVideoRef.current) {
+    if (introVideoRef.current && typeof introVideoRef.current.play === 'function') {
       const targetMute = !introVideoRef.current.muted;
       introVideoRef.current.muted = targetMute;
       setIntroVideoMuted(targetMute);
+    } else {
+      setIntroVideoMuted(prev => !prev);
     }
   };
 
@@ -114,10 +116,12 @@ export default function App() {
   useEffect(() => {
     const globalWin = window as any;
     globalWin.toggleMinstrelAudio = () => {
-      if (introVideoRef.current) {
+      if (introVideoRef.current && typeof introVideoRef.current.play === 'function') {
         const targetMute = !introVideoRef.current.muted;
         introVideoRef.current.muted = targetMute;
         setIntroVideoMuted(targetMute);
+      } else {
+        setIntroVideoMuted(prev => !prev);
       }
     };
     return () => {
@@ -233,7 +237,7 @@ export default function App() {
       // This targets the main video/audio element on your street corner and replaces the static loop
       const mainVideo = document.getElementById("haddi-video") as HTMLVideoElement | null;
       
-      if (mainVideo) {
+      if (mainVideo && mainVideo.tagName === "VIDEO" && typeof mainVideo.play === "function") {
         // Map different genres to their specific high-frequency multi-instrument arrangement video URLs
         const genreVideos: Record<string, string> = {
           "Acoustic Folk": "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
@@ -254,6 +258,11 @@ export default function App() {
         mainVideo.play().catch(e => console.warn("Playback prevented or error:", e));
         
         // Update the golden button state to playing sound
+        const soundBtn = document.getElementById("unmute-btn");
+        if (soundBtn) soundBtn.innerHTML = "🔊";
+      } else {
+        // If it is an iframe, cleanly toggle state variable to prevent browser exceptions
+        setIntroVideoMuted(false);
         const soundBtn = document.getElementById("unmute-btn");
         if (soundBtn) soundBtn.innerHTML = "🔊";
       }
@@ -791,22 +800,14 @@ export default function App() {
 
                   {/* Flagship Video Canvas: universal, front-and-center landing track layout with zero barriers */}
                   <div className="relative w-full rounded-xl overflow-hidden border border-[#C5A880]/20 shadow-xl bg-black/80 flex items-center justify-center aspect-video min-h-[200px]">
-                    <video 
-                      id="haddi-video" 
-                      ref={introVideoRef}
-                      src={mainVideoSrc}
-                      autoPlay 
-                      loop 
-                      muted={introVideoMuted} 
-                      controls
-                      playsInline 
-                      preload="auto" 
-                      crossOrigin="anonymous"
-                      className="w-full h-full object-cover"
-                    >
-                      <source src={mainVideoSrc} type="video/mp4" />
-                      Your browser does not support the video tag.
-                    </video>
+                    <iframe 
+                      id="haddi-video"
+                      src="https://drive.google.com/file/d/1H7bdSkULkzoNQGqqno26_KJzAPsZUPL2/preview" 
+                      width="100%" 
+                      height="450" 
+                      allow="autoplay" 
+                      style={{ border: "none", borderRadius: "12px", backgroundColor: "#050b14" }}
+                    ></iframe>
 
                     {/* Golden unmute/mute overlay button */}
                     <button 
@@ -967,21 +968,14 @@ export default function App() {
                     </div>
                   ) : (
                     <div className="relative w-full rounded-xl overflow-hidden border border-[#C5A880]/20 shadow-xl bg-black/80 flex items-center justify-center aspect-video min-h-[200px]">
-                      <video 
-                        id="premium-preview-video" 
-                        src={previewVideoSrc}
-                        autoPlay 
-                        loop 
-                        muted 
-                        controls
-                        playsInline 
-                        preload="auto" 
-                        crossOrigin="anonymous"
-                        className="w-full h-full object-cover"
-                      >
-                        <source src={previewVideoSrc} type="video/mp4" />
-                        Your browser does not support the video tag.
-                      </video>
+                      <iframe 
+                        id="premium-preview-video"
+                        src="https://drive.google.com/file/d/1dvyq1PS79s4e3GZlcDxZ3tK2lGKktyiC/preview" 
+                        width="100%" 
+                        height="450" 
+                        allow="autoplay" 
+                        style={{ border: "none", borderRadius: "12px", backgroundColor: "#050b14" }}
+                      ></iframe>
                     </div>
                   )}
 
