@@ -132,11 +132,17 @@ export default function App() {
   // --- Admin Sandbox Gate States & Handlers ---
   const [isAdminGateVisible, setIsAdminGateVisible] = useState(false);
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isTestStudio, setIsTestStudio] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   useEffect(() => {
     const checkAdminRoute = () => {
-      if (window.location.href.includes('/admin/test-studio') || window.location.hash === '#test-studio') {
-        setIsAdminGateVisible(true);
+      const active = window.location.href.includes('/admin/test-studio') || window.location.hash === '#test-studio';
+      setIsTestStudio(active);
+      setIsAdminGateVisible(active);
+      if (active) {
         setTimeout(() => {
           const el = document.getElementById('admin-gate-container');
           if (el) {
@@ -194,9 +200,36 @@ export default function App() {
     }
   }, []);
 
+  const handleValidateAuthorization = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const phrase = passwordInput.trim().toUpperCase();
+    if (phrase === "SHALOM" || phrase === "ADMIN") {
+      setIsAuthorized(true);
+      setIsAdminUnlocked(true);
+      setPasswordError("");
+    } else {
+      setPasswordError("Invalid authorization phrase. Please try again.");
+    }
+  };
+
+  const handleCancelAuthorization = () => {
+    setPasswordInput("");
+    setPasswordError("");
+    setIsAuthorized(false);
+    setIsTestStudio(false);
+    setIsAdminGateVisible(false);
+    window.location.hash = "";
+    window.history.replaceState(null, "", window.location.pathname || "/");
+  };
+
   const verifyAdminGate = () => {
     const enteredEmail = (document.getElementById('admin-email-input') as HTMLInputElement | null)?.value.trim() || "";
     const masterDeveloperId = "Pswilliamh@gmail.com";
+    
+    if (!isAuthorized) {
+      alert("Please authorize through the Seraphim Test Studio secure gateway first.");
+      return;
+    }
     
     if (enteredEmail.toLowerCase() === masterDeveloperId.toLowerCase()) {
       setIsAdminUnlocked(true);
@@ -206,6 +239,11 @@ export default function App() {
   };
 
   const executeMockSongGeneration = () => {
+    if (!isAuthorized) {
+      alert("Unauthorized: Access locked.");
+      return;
+    }
+
     const email = (document.getElementById('test-target-email') as HTMLInputElement | null)?.value.trim() || "";
     const story = (document.getElementById('test-story-context') as HTMLTextAreaElement | null)?.value.trim() || "";
     const terminal = document.getElementById('sandbox-terminal');
@@ -1644,11 +1682,68 @@ export default function App() {
         </div>
       )}
 
+      {/* --- PASSWORD AUTHORIZATION MODAL GATEWAY --- */}
+      {isTestStudio && !isAuthorized && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+          <div className="relative w-full max-w-md bg-[#121110] border border-[#C5A880]/30 rounded-2xl p-8 shadow-2xl flex flex-col gap-6 text-center">
+            {/* Decorative top grid accent */}
+            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-red-800 via-[#C5A880] to-red-800 rounded-t-2xl"></div>
+            
+            <div className="flex flex-col items-center gap-3">
+              <span className="text-4xl">🔒</span>
+              <h3 className="font-sans text-xl font-semibold tracking-tight text-[#C5A880]">
+                Seraphim Test Studio Authorization Required
+              </h3>
+              <p className="text-xs text-neutral-400 max-w-xs leading-relaxed">
+                Bypassing active production streams requires the master security validation phrase.
+              </p>
+            </div>
+
+            <form onSubmit={handleValidateAuthorization} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5 text-left">
+                <label className="text-[10px] uppercase tracking-wider font-mono text-[#C5A880]/70 font-bold">
+                  Validation Secret
+                </label>
+                <input
+                  type="password"
+                  placeholder="••••••••••••"
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  className="w-full px-4 py-3 bg-neutral-950/80 border border-[#C5A880]/25 rounded-xl text-white text-center font-mono placeholder-neutral-700 focus:outline-none focus:border-[#C5A880] focus:ring-1 focus:ring-[#C5A880] transition-all"
+                  autoFocus
+                />
+                {passwordError && (
+                  <p className="text-red-500 text-[11px] font-mono mt-1 text-center font-medium">
+                    ⚠️ {passwordError}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2 mt-2">
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-[#C5A880] hover:bg-[#b0936b] text-[#121110] font-bold text-sm tracking-widest uppercase rounded-xl transition-all cursor-pointer shadow-lg active:scale-95 animate-pulse"
+                >
+                  Verify Access
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelAuthorization}
+                  className="w-full py-2.5 bg-transparent hover:bg-neutral-900 text-neutral-400 hover:text-neutral-200 text-xs tracking-wider uppercase font-medium rounded-xl transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* --- MINSTREL STUDIO SANDBOX ADMIN GATE --- */}
       <div 
         id="admin-gate-container" 
         style={{ 
-          display: isAdminGateVisible ? "block" : "none", 
+          display: (isAdminGateVisible && isAuthorized) ? "block" : "none", 
           margin: "40px auto", 
           maxWidth: "600px", 
           padding: "30px", 
