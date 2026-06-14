@@ -18,8 +18,8 @@ export default function App() {
   // --- Lifecycles & State Management ---
   const [target, setTarget] = useState("");
   const [context, setContext] = useState("");
-  const mainVideoSrc = "/video/song-gift.mp4";
-  const previewVideoSrc = "/video/premium-preview.mp4";
+  const mainVideoSrc = "https://drive.google.com/uc?export=download&id=1H7bdSkULkzoNQGqqno26_KJzAPsZUPL2";
+  const previewVideoSrc = "https://drive.google.com/uc?export=download&id=1dvyq1PS79s4e3GZlcDxZ3tK2lGKktyiC";
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [setType, setSetType] = useState<SetType>("quick");
