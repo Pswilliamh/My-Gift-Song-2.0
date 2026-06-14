@@ -18,6 +18,8 @@ export default function App() {
   // --- Lifecycles & State Management ---
   const [target, setTarget] = useState("");
   const [context, setContext] = useState("");
+  const mainVideoSrc = "/video/song-gift.mp4";
+  const previewVideoSrc = "/video/premium-preview.mp4";
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [setType, setSetType] = useState<SetType>("quick");
@@ -792,7 +794,7 @@ export default function App() {
                     <video 
                       id="haddi-video" 
                       ref={introVideoRef}
-                      src="/video/song-gift.mp4"
+                      src={mainVideoSrc}
                       autoPlay 
                       loop 
                       muted={introVideoMuted} 
@@ -802,7 +804,7 @@ export default function App() {
                       crossOrigin="anonymous"
                       className="w-full h-full object-cover"
                     >
-                      <source src="/video/song-gift.mp4" type="video/mp4" />
+                      <source src={mainVideoSrc} type="video/mp4" />
                       Your browser does not support the video tag.
                     </video>
 
@@ -967,7 +969,7 @@ export default function App() {
                     <div className="relative w-full rounded-xl overflow-hidden border border-[#C5A880]/20 shadow-xl bg-black/80 flex items-center justify-center aspect-video min-h-[200px]">
                       <video 
                         id="premium-preview-video" 
-                        src="/video/premium-preview.mp4"
+                        src={previewVideoSrc}
                         autoPlay 
                         loop 
                         muted 
@@ -977,7 +979,7 @@ export default function App() {
                         crossOrigin="anonymous"
                         className="w-full h-full object-cover"
                       >
-                        <source src="/video/premium-preview.mp4" type="video/mp4" />
+                        <source src={previewVideoSrc} type="video/mp4" />
                         Your browser does not support the video tag.
                       </video>
                     </div>
