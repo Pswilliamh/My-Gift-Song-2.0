@@ -351,6 +351,14 @@ export default function App() {
           terminal.innerHTML += `<br><span style='color: #FFD700; font-weight: bold;'>🎉 SUCCESS! The sandbox has successfully broken out of the strumming loop. The live audio stream is online! (Style: ${customGenre})</span>`;
         }
 
+        // Target the media player explicitly and programmatically play
+        const player = document.getElementById("suno-audio-player") as HTMLAudioElement | null;
+        if (player) {
+          player.src = liveTrackUrl;
+          player.load();
+          player.play().catch(e => console.warn("Auto-playback on success prevented or interrupted:", e));
+        }
+
       } else {
         throw new Error("No live audio URLs returned from Suno server.");
       }
@@ -371,6 +379,20 @@ export default function App() {
       };
       const fallbackUrl = fallbackUrls[customGenre] || "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
       setAudioUrl(fallbackUrl);
+      setIsAudioPlaying(true);
+      if (audioRef.current) {
+        audioRef.current.src = fallbackUrl;
+        audioRef.current.load();
+        audioRef.current.play().catch(e => console.warn("Fallback playback exception handled gracefully:", e));
+      }
+
+      // Target the media player explicitly and programmatically play on fallback
+      const player = document.getElementById("suno-audio-player") as HTMLAudioElement | null;
+      if (player) {
+        player.src = fallbackUrl;
+        player.load();
+        player.play().catch(e => console.warn("Auto-playback on fallback prevented or interrupted:", e));
+      }
       
       const customSongData: SongData = {
         id: `sandbox-${Date.now()}`,
@@ -1007,14 +1029,17 @@ export default function App() {
                         </div>
                       </div>
 
-                      {/* Hidden native audio tag */}
+                      {/* Active HTML5 Audio Player */}
                       <audio
                         id="suno-audio-player"
                         src={audioUrl}
                         ref={audioRef}
                         onTimeUpdate={handleAudioTimeUpdate}
                         onEnded={() => setIsAudioPlaying(false)}
-                        className="hidden"
+                        autoPlay={true}
+                        muted={false}
+                        controls={true}
+                        className="w-full mt-2 block rounded-lg bg-black/40 border border-[#FFD700]/20 text-white"
                       />
 
                       {/* Progress Line */}
