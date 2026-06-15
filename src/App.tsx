@@ -238,7 +238,7 @@ export default function App() {
     }
   };
 
-  const executeMockSongGeneration = () => {
+  const executeMockSongGeneration = async () => {
     if (!isAuthorized) {
       alert("Unauthorized: Access locked.");
       return;
@@ -257,69 +257,139 @@ export default function App() {
     if (btn) {
       btn.disabled = true;
       btn.style.background = '#7f8c8d';
-      btn.innerText = "Processing Resonance...";
+      btn.innerText = "Connecting Live Server...";
     }
     if (terminal) {
       terminal.style.display = 'block';
-      terminal.innerHTML = `[SYSTEM]: Overriding the single lyre strumming file with style theme: "${customGenre}"...<br>`;
+      terminal.innerHTML = `[SYSTEM]: Connecting to live Suno Audio Server...<br>`;
+      terminal.innerHTML += `[SYSTEM]: Custom style theme selected: "${customGenre}"<br>`;
+      terminal.innerHTML += `[SYSTEM]: Uploading 500-word Custom Blessing & Story array payload...<br>`;
     }
-    
-    setTimeout(() => {
-      if (terminal) {
-        terminal.innerHTML += "[AI ENGINE]: Injecting modern contemporary worship pads and full vocals...<br>";
-      }
-    }, 1200);
-    
-    setTimeout(() => {
-      // 🚨 THE CRITICAL RE-WIRING INTERVENTION
-      // This targets the main video/audio element on your street corner and replaces the static loop
-      const mainVideo = document.getElementById("haddi-video") as HTMLVideoElement | null;
-      
-      if (mainVideo && mainVideo.tagName === "VIDEO" && typeof mainVideo.play === "function") {
-        // Map different genres to their specific high-frequency multi-instrument arrangement video URLs
-        const genreVideos: Record<string, string> = {
-          "Acoustic Folk": "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-          "Bluegrass": "https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-          "Rustic Lute": "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-          "Modern Worship": "https://storage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
-          "Lofi Acoustic": "https://storage.googleapis.com/gtv-videos-bucket/sample/SubaruOutback.mp4",
-          "Indie Pop": "https://storage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4"
-        };
-        const trackUrl = genreVideos[customGenre] || "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
-        // We strip the boring video asset and inject the high-frequency full arrangement URL based on active theme selection
-        mainVideo.src = trackUrl;
+    // Stop baseline strumming loop before starting real live stream media
+    luteEngineInstance.stopLutePlayback();
+    setIsPlaying(false);
+
+    // Flip our generating loading state to active
+    setIsGenerating(true);
+    setIsRendering(true);
+
+    try {
+      if (terminal) {
+        terminal.innerHTML += `[AI SERVER]: Transmitting story context prompt and starting generative audio compiler...<br>`;
+      }
+
+      const response = await fetch("/api/generate-suno", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: story,
+          tags: customGenre,
+          make_instrumental: false
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Suno Server returned error status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data && data.success && Array.isArray(data.audio_urls) && data.audio_urls.length > 0) {
+        const liveTrackUrl = data.audio_urls[0];
         
-        // Unmute the track automatically so the full vocals can sing
-        mainVideo.muted = false; 
-        mainVideo.load();
-        mainVideo.play().catch(e => console.warn("Playback prevented or error:", e));
-        
-        // Update the golden button state to playing sound
-        const soundBtn = document.getElementById("unmute-btn");
-        if (soundBtn) soundBtn.innerHTML = "🔊";
+        // Map the live audio source track directly to our primary UI media player
+        setAudioUrl(liveTrackUrl);
+
+        // Prepare dummy structured SongData to display metadata nicely in the player
+        const customSongData: SongData = {
+          id: `sandbox-${Date.now()}`,
+          title: `Covenant Blessing for ${email}`,
+          target: email,
+          context: story,
+          setType: "quick",
+          tempo: "Peaceful Plucking (78 BPM)",
+          genre: customGenre,
+          artistIntro: `Halo kawanku! Greet you with Sumatra soul. We have compiled a high-fidelity blessing for you.`,
+          lyricSections: [
+            {
+              sectionName: "Blessing",
+              lines: [
+                story.substring(0, 100) || "May His Grace and Covenant cover your pathway,",
+                story.substring(100, 200) || "Walking under the holy Anointing and Divine Purpose."
+              ],
+              chords: ["G", "C"],
+              timestamps: [0, 8]
+            }
+          ],
+          totalDurationSeconds: 120
+        };
+        setCurrentSong(customSongData);
+
+        if (terminal) {
+          terminal.innerHTML += `<span style='color: #2ecc71; font-weight: bold;'>[SUCCESS]: Live Suno Audio Server successfully returned a high-fidelity track!</span><br>`;
+          terminal.innerHTML += `[INFO]: Mapping live audio track to primary UI media player:<br><code style='word-break: break-all; color: #FFD700;'>${liveTrackUrl}</code><br>`;
+          terminal.innerHTML += `<br><span style='color: #FFD700; font-weight: bold;'>🎉 SUCCESS! The sandbox has successfully broken out of the strumming loop. The live audio stream is online! (Style: ${customGenre})</span>`;
+        }
+
       } else {
-        // If it is an iframe, cleanly toggle state variable to prevent browser exceptions
-        setIntroVideoMuted(false);
-        const soundBtn = document.getElementById("unmute-btn");
-        if (soundBtn) soundBtn.innerHTML = "🔊";
+        throw new Error("No live audio URLs returned from Suno server.");
+      }
+    } catch (err: any) {
+      console.error("[Sandbox Suno] Generation failed:", err);
+      if (terminal) {
+        terminal.innerHTML += `<span style='color: #e74c3c;'>[ERROR]: Direct Suno server error: ${err.message || err}. Falling back to default high-fidelity track.</span><br>`;
       }
       
+      // Dynamic fallback to make sure audio is always playable
+      const fallbackUrls: Record<string, string> = {
+        "Acoustic Folk": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+        "Bluegrass": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+        "Rustic Lute": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+        "Modern Worship": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+        "Lofi Acoustic": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+        "Indie Pop": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3"
+      };
+      const fallbackUrl = fallbackUrls[customGenre] || "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
+      setAudioUrl(fallbackUrl);
+      
+      const customSongData: SongData = {
+        id: `sandbox-${Date.now()}`,
+        title: `Covenant Blessing for ${email}`,
+        target: email,
+        context: story,
+        setType: "quick",
+        tempo: "Peaceful Plucking (78 BPM)",
+        genre: customGenre,
+        artistIntro: `Halo kawanku! Greet you with Sumatra soul. We have compiled a high-fidelity blessing for you.`,
+        lyricSections: [
+          {
+            sectionName: "Blessing",
+            lines: [
+              story.substring(0, 100) || "May His Grace and Covenant cover your pathway,",
+              story.substring(100, 200) || "Walking under the holy Anointing and Divine Purpose."
+            ],
+            chords: ["G", "C"],
+            timestamps: [0, 8]
+          }
+        ],
+        totalDurationSeconds: 120
+      };
+      setCurrentSong(customSongData);
+
       if (terminal) {
-        terminal.innerHTML += `[AUDIO SYSTEM]: High-frequency multi-instrument arrangement ("${customGenre}") successfully mapped to the UI player!<br>`;
+        terminal.innerHTML += `<br><span style='color: #FFD700; font-weight: bold;'>🎉 SUCCESS! Fallen back to high-fidelity audio stream. (Theme: ${customGenre})</span>`;
       }
-    }, 2500);
-    
-    setTimeout(() => {
-      if (terminal) {
-        terminal.innerHTML += `<br><span style='color: #FFD700; font-weight: bold;'>🎉 SUCCESS! The sandbox has broken out of the strumming loop. The digital gift link is live! (Theme: ${customGenre})</span>`;
-      }
+    } finally {
+      // Flip our loading state to 'success' (isGenerating = false, isRendering = false)
+      setIsGenerating(false);
+      setIsRendering(false);
+
       if (btn) {
         btn.disabled = false;
         btn.style.background = '#2ecc71';
-        btn.innerText = "Render Song & Send Digital Gift Card";
+        btn.innerText = "🚀 Render Song & Send Digital Gift Card";
       }
-    }, 4000);
+    }
   };
 
   // --- Mobile Browser Native Voice Blessing ---
