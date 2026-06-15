@@ -290,7 +290,7 @@ export default function App() {
       };
       const cleanTags = tagMappings[customGenre] || `${customGenre}, beautiful vocals, heartfelt`;
 
-      const response = await fetch("/api/generate-suno", {
+      const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -302,6 +302,7 @@ export default function App() {
       });
 
       if (!response.ok) {
+        alert("⚠️ Admin Notice: Suno API endpoint path requires mapping adjustment.");
         throw new Error(`Suno Server returned error status: ${response.status}`);
       }
 
