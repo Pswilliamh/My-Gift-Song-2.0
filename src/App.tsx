@@ -22,6 +22,7 @@ export default function App() {
   const previewVideoSrc = "https://drive.google.com/uc?export=download&id=1dvyq1PS79s4e3GZlcDxZ3tK2lGKktyiC";
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [setType, setSetType] = useState<SetType>("quick");
   const [customGenre, setCustomGenre] = useState("Acoustic Folk");
   const [gifterEmail, setGifterEmail] = useState("");
@@ -279,156 +280,109 @@ export default function App() {
         terminal.innerHTML += `[AI SERVER]: Transmitting story context prompt and starting generative audio compiler...<br>`;
       }
 
-      // 2. DYNAMIC PAYLOAD INJECTION with style tag mappings
-      const tagMappings: Record<string, string> = {
-        "Acoustic Folk": "acoustic folk, heartfelt, acoustic plucking, beautiful vocals, cozy",
-        "Bluegrass": "bluegrass, lively banjo, rustic acoustic, beautiful vocals, upbeat rhythm",
-        "Rustic Lute": "rustic lute, renaissance acoustic, beautiful vocals, medieval sweet plucking",
-        "Modern Worship": "Christian Modern Worship, beautiful vocals, heartfelt, acoustic pads",
-        "Lofi Acoustic": "lofi acoustic, ambient strings, chill beats, beautiful vocals, soft pads",
-        "Indie Pop": "indie pop, upbeat acoustic, bright vocals, heartfelt, modern groove"
-      };
-      const cleanTags = tagMappings[customGenre] || `${customGenre}, beautiful vocals, heartfelt`;
+      // 1. FORCE DIRECT URL ENDPOINT:
+      const directUrl = "https://api.302.ai/v1/suno/submit/music";
 
-      let response;
-      let data;
+      // 2. ATTACH THE HEADERS PACK:
+      const response = await fetch(directUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer YOUR_ACTUAL_302_API_KEY_HERE"
+        },
+        // 3. BODY CONTEXT PACKING:
+        body: JSON.stringify({
+          prompt: story,
+          tags: "Christian modern worship, beautiful acoustic pads, emotional slow tempo vocal arrangement",
+          make_instrumental: false
+        })
+      });
 
-      try {
-        if (terminal) {
-          terminal.innerHTML += `[SYSTEM]: Attempting direct connection to verified 302.AI server path...<br>`;
-        }
-        
-        // 1 & 2. FORCE THE 302.AI INTEGRATION PATH + INSULATE THE AUTHORIZATION HEADER:
-        // We configure a direct fetch to the verified 302.AI Suno compilation server with the Bearer schema
-        const apiKeyVal = "YOUR_302_API_KEY";
-        
-        response = await fetch("https://api.302.ai/v1/suno/submit/music", {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKeyVal}`
-          },
-          body: JSON.stringify({
-            prompt: story,
-            tags: cleanTags,
-            make_instrumental: false,
-            wait_audio_ready: true
-          })
-        });
+      if (!response.ok) {
+        throw new Error(`Suno Server returned error status: ${response.status}`);
+      }
 
-        if (response.ok) {
-          const resJson = await response.json();
-          if (resJson) {
-            let urls: string[] = [];
-            if (Array.isArray(resJson)) {
-              urls = resJson.map((song: any) => song.audio_url || song.url).filter(Boolean);
-            } else if (resJson.audio_urls && Array.isArray(resJson.audio_urls)) {
-              urls = resJson.audio_urls;
-            } else if (resJson.data && Array.isArray(resJson.data)) {
-              urls = resJson.data.map((song: any) => song.audio_url || song.url).filter(Boolean);
-            } else if (resJson.audio_url) {
-              urls = [resJson.audio_url];
-            } else if (resJson.url) {
-              urls = [resJson.url];
-            }
-            if (urls.length > 0) {
-              data = { success: true, audio_urls: urls };
-              if (terminal) {
-                terminal.innerHTML += `[SYSTEM]: Direct 302.AI endpoint returned valid audio stream URLs!<br>`;
-              }
-            }
+      const resJson = await response.json();
+
+      // Extract raw audio URLs carefully from output response
+      let urls: string[] = [];
+      if (Array.isArray(resJson)) {
+        urls = resJson.map((song: any) => song.audio_url || song.url).filter(Boolean);
+      } else if (resJson.audio_urls && Array.isArray(resJson.audio_urls)) {
+        urls = resJson.audio_urls;
+      } else if (resJson.data && Array.isArray(resJson.data)) {
+        urls = resJson.data.map((song: any) => song.audio_url || song.url).filter(Boolean);
+      } else if (resJson.audio_url) {
+        urls = [resJson.audio_url];
+      } else if (resJson.url) {
+        urls = [resJson.url];
+      }
+
+      if (urls.length === 0) {
+        throw new Error("No live audio URLs found in the response object.");
+      }
+
+      const liveTrackUrl = urls[0];
+
+      // 4. OVERRIDE THE ALERT DIALOG:
+      // If the network successfully receives a response containing data, set 'isProcessing' to true
+      setIsProcessing(true);
+      setAudioUrl(liveTrackUrl);
+      setIsAudioPlaying(true);
+
+      if (audioRef.current) {
+        audioRef.current.src = liveTrackUrl;
+        audioRef.current.load();
+        audioRef.current.play().catch(e => console.warn("Playback exception handled gracefully:", e));
+      }
+
+      console.log("🎉 SUCCESS! Real Suno Neural Vocals Engine loaded successfully!");
+
+      // Prepare dummy structured SongData to display metadata nicely in the player
+      const customSongData: SongData = {
+        id: `sandbox-${Date.now()}`,
+        title: `Covenant Blessing for ${email}`,
+        target: email,
+        context: story,
+        setType: "quick",
+        tempo: "Peaceful Plucking (78 BPM)",
+        genre: customGenre,
+        artistIntro: `Halo kawanku! Greet you with Sumatra soul. We have compiled a high-fidelity blessing for you.`,
+        lyricSections: [
+          {
+            sectionName: "Blessing",
+            lines: [
+              story.substring(0, 100) || "May His Grace and Covenant cover your pathway,",
+              story.substring(100, 200) || "Walking under the holy Anointing and Divine Purpose."
+            ],
+            chords: ["G", "C"],
+            timestamps: [0, 8]
           }
-        } else {
-          console.warn(`Direct 302.AI response returned non-ok status: ${response.status}`);
-        }
-      } catch (directErr) {
-        console.warn("[Suno] Direct 302.AI fetch dropped or CORS blocked, deploying unblockable server-side proxy secure fallback...", directErr);
+        ],
+        totalDurationSeconds: 120
+      };
+      setCurrentSong(customSongData);
+
+      if (terminal) {
+        terminal.innerHTML += `<span style='color: #2ecc71; font-weight: bold;'>[SUCCESS]: Live Suno Audio Server successfully returned a high-fidelity track!</span><br>`;
+        terminal.innerHTML += `[INFO]: Mapping live audio track to primary UI media player:<br><code style='word-break: break-all; color: #FFD700;'>${liveTrackUrl}</code><br>`;
+        terminal.innerHTML += `<br><span style='color: #FFD700; font-weight: bold;'>🎉 SUCCESS! The sandbox has successfully broken out of the strumming loop. The live audio stream is online! (Style: ${customGenre})</span>`;
       }
 
-      // 1 & 2 SECURE BACKEND FALLBACK:
-      // If direct client-side fetch is blocked or fails, we execute our backend proxy where the 302 token is securely appended
-      if (!data) {
-        if (terminal) {
-          terminal.innerHTML += `[SYSTEM]: Routing through secure server-side app proxy fallback...<br>`;
-        }
-        
-        response = await fetch("/api/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt: story,
-            tags: cleanTags,
-            make_instrumental: false,
-            wait_audio_ready: true
-          })
-        });
-
-        if (!response.ok) {
-          alert("⚠️ Admin Notice: Suno API endpoint path requires mapping adjustment.");
-          throw new Error(`Suno Server returned error status: ${response.status}`);
-        }
-        data = await response.json();
+      // Target the media player explicitly and programmatically play
+      const player = document.getElementById("suno-audio-player") as HTMLAudioElement | null;
+      if (player) {
+        player.src = liveTrackUrl;
+        player.load();
+        player.play().catch(e => console.warn("Auto-playback on success prevented or interrupted:", e));
       }
 
-      if (data && data.success && Array.isArray(data.audio_urls) && data.audio_urls.length > 0) {
-        const liveTrackUrl = data.audio_urls[0];
-        
-        // 3. RE-MAP SUCCESS VIBRATIONS:
-        // Central player mapping and immediate vocal playback trigger
-        setAudioUrl(liveTrackUrl);
-        setIsAudioPlaying(true);
-        if (audioRef.current) {
-          audioRef.current.src = liveTrackUrl;
-          audioRef.current.load();
-          audioRef.current.play().catch(e => console.warn("Playback exception handled gracefully:", e));
-        }
-
-        console.log("🎉 SUCCESS! Real Suno Neural Vocals Engine loaded successfully!");
-
-        // Prepare dummy structured SongData to display metadata nicely in the player
-        const customSongData: SongData = {
-          id: `sandbox-${Date.now()}`,
-          title: `Covenant Blessing for ${email}`,
-          target: email,
-          context: story,
-          setType: "quick",
-          tempo: "Peaceful Plucking (78 BPM)",
-          genre: customGenre,
-          artistIntro: `Halo kawanku! Greet you with Sumatra soul. We have compiled a high-fidelity blessing for you.`,
-          lyricSections: [
-            {
-              sectionName: "Blessing",
-              lines: [
-                story.substring(0, 100) || "May His Grace and Covenant cover your pathway,",
-                story.substring(100, 200) || "Walking under the holy Anointing and Divine Purpose."
-              ],
-              chords: ["G", "C"],
-              timestamps: [0, 8]
-            }
-          ],
-          totalDurationSeconds: 120
-        };
-        setCurrentSong(customSongData);
-
-        if (terminal) {
-          terminal.innerHTML += `<span style='color: #2ecc71; font-weight: bold;'>[SUCCESS]: Live Suno Audio Server successfully returned a high-fidelity track!</span><br>`;
-          terminal.innerHTML += `[INFO]: Mapping live audio track to primary UI media player:<br><code style='word-break: break-all; color: #FFD700;'>${liveTrackUrl}</code><br>`;
-          terminal.innerHTML += `<br><span style='color: #FFD700; font-weight: bold;'>🎉 SUCCESS! The sandbox has successfully broken out of the strumming loop. The live audio stream is online! (Style: ${customGenre})</span>`;
-        }
-
-        // Target the media player explicitly and programmatically play
-        const player = document.getElementById("suno-audio-player") as HTMLAudioElement | null;
-        if (player) {
-          player.src = liveTrackUrl;
-          player.load();
-          player.play().catch(e => console.warn("Auto-playback on success prevented or interrupted:", e));
-        }
-
-      } else {
-        throw new Error("No live audio URLs returned from Suno server.");
-      }
     } catch (err: any) {
       console.error("[Sandbox Suno] Generation failed:", err);
+
+      // Only pop up the mapping alert if a strict network failure occurs
+      alert("⚠️ Admin Notice: Suno API endpoint path requires mapping adjustment.");
+
       if (terminal) {
         terminal.innerHTML += `<span style='color: #e74c3c;'>[ERROR]: Direct Suno server error: ${err.message || err}. Falling back to default high-fidelity track.</span><br>`;
       }
