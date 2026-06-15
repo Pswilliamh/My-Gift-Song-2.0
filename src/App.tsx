@@ -290,27 +290,91 @@ export default function App() {
       };
       const cleanTags = tagMappings[customGenre] || `${customGenre}, beautiful vocals, heartfelt`;
 
-      const response = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: story,
-          tags: cleanTags,
-          make_instrumental: false,
-          wait_audio_ready: true
-        })
-      });
+      let response;
+      let data;
 
-      if (!response.ok) {
-        alert("⚠️ Admin Notice: Suno API endpoint path requires mapping adjustment.");
-        throw new Error(`Suno Server returned error status: ${response.status}`);
+      try {
+        if (terminal) {
+          terminal.innerHTML += `[SYSTEM]: Attempting direct connection to verified 302.AI server path...<br>`;
+        }
+        
+        // 1 & 2. FORCE THE 302.AI INTEGRATION PATH + INSULATE THE AUTHORIZATION HEADER:
+        // We configure a direct fetch to the verified 302.AI Suno compilation server with the Bearer schema
+        const apiKeyVal = "YOUR_302_API_KEY";
+        
+        response = await fetch("https://api.302.ai/v1/suno/submit/music", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKeyVal}`
+          },
+          body: JSON.stringify({
+            prompt: story,
+            tags: cleanTags,
+            make_instrumental: false,
+            wait_audio_ready: true
+          })
+        });
+
+        if (response.ok) {
+          const resJson = await response.json();
+          if (resJson) {
+            let urls: string[] = [];
+            if (Array.isArray(resJson)) {
+              urls = resJson.map((song: any) => song.audio_url || song.url).filter(Boolean);
+            } else if (resJson.audio_urls && Array.isArray(resJson.audio_urls)) {
+              urls = resJson.audio_urls;
+            } else if (resJson.data && Array.isArray(resJson.data)) {
+              urls = resJson.data.map((song: any) => song.audio_url || song.url).filter(Boolean);
+            } else if (resJson.audio_url) {
+              urls = [resJson.audio_url];
+            } else if (resJson.url) {
+              urls = [resJson.url];
+            }
+            if (urls.length > 0) {
+              data = { success: true, audio_urls: urls };
+              if (terminal) {
+                terminal.innerHTML += `[SYSTEM]: Direct 302.AI endpoint returned valid audio stream URLs!<br>`;
+              }
+            }
+          }
+        } else {
+          console.warn(`Direct 302.AI response returned non-ok status: ${response.status}`);
+        }
+      } catch (directErr) {
+        console.warn("[Suno] Direct 302.AI fetch dropped or CORS blocked, deploying unblockable server-side proxy secure fallback...", directErr);
       }
 
-      const data = await response.json();
+      // 1 & 2 SECURE BACKEND FALLBACK:
+      // If direct client-side fetch is blocked or fails, we execute our backend proxy where the 302 token is securely appended
+      if (!data) {
+        if (terminal) {
+          terminal.innerHTML += `[SYSTEM]: Routing through secure server-side app proxy fallback...<br>`;
+        }
+        
+        response = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: story,
+            tags: cleanTags,
+            make_instrumental: false,
+            wait_audio_ready: true
+          })
+        });
+
+        if (!response.ok) {
+          alert("⚠️ Admin Notice: Suno API endpoint path requires mapping adjustment.");
+          throw new Error(`Suno Server returned error status: ${response.status}`);
+        }
+        data = await response.json();
+      }
+
       if (data && data.success && Array.isArray(data.audio_urls) && data.audio_urls.length > 0) {
         const liveTrackUrl = data.audio_urls[0];
         
-        // Map the live audio source track directly to our primary UI media player and play instantly
+        // 3. RE-MAP SUCCESS VIBRATIONS:
+        // Central player mapping and immediate vocal playback trigger
         setAudioUrl(liveTrackUrl);
         setIsAudioPlaying(true);
         if (audioRef.current) {

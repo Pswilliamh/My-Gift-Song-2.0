@@ -401,7 +401,7 @@ app.post(["/api/generate-suno", "/api/generate"], async (req, res) => {
     if (sunoApiKey && sunoApiKey !== "MOCK_KEY") {
       console.log("[Suno Bridge] Contacting live Suno generation API utilizing standard REST parameters...");
       
-      const response = await fetch("https://api.sunoapi.com/v1/suno/generate", {
+      const response = await fetch("https://api.302.ai/v1/suno/submit/music", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
