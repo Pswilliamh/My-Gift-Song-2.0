@@ -374,7 +374,7 @@ You MUST integrate the mandatory vocabulary matrix terms: Blessing, Covenant, Gr
 
 // Added Live Suno generation API proxy route
 app.post("/api/generate-suno", async (req, res) => {
-  const { prompt, tags, make_instrumental } = req.body;
+  const { prompt, tags, make_instrumental, wait_audio_ready } = req.body;
   
   if (!prompt) {
     return res.status(400).json({ error: "Story prompt is required for Suno generation." });
@@ -410,7 +410,8 @@ app.post("/api/generate-suno", async (req, res) => {
         body: JSON.stringify({
           prompt: prompt,
           tags: cleanTags,
-          make_instrumental: make_instrumental === true
+          make_instrumental: make_instrumental === true,
+          wait_audio_ready: wait_audio_ready === true
         })
       });
 

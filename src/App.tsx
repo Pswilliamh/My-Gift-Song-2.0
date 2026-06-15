@@ -279,13 +279,25 @@ export default function App() {
         terminal.innerHTML += `[AI SERVER]: Transmitting story context prompt and starting generative audio compiler...<br>`;
       }
 
+      // 2. DYNAMIC PAYLOAD INJECTION with style tag mappings
+      const tagMappings: Record<string, string> = {
+        "Acoustic Folk": "acoustic folk, heartfelt, acoustic plucking, beautiful vocals, cozy",
+        "Bluegrass": "bluegrass, lively banjo, rustic acoustic, beautiful vocals, upbeat rhythm",
+        "Rustic Lute": "rustic lute, renaissance acoustic, beautiful vocals, medieval sweet plucking",
+        "Modern Worship": "Christian Modern Worship, beautiful vocals, heartfelt, acoustic pads",
+        "Lofi Acoustic": "lofi acoustic, ambient strings, chill beats, beautiful vocals, soft pads",
+        "Indie Pop": "indie pop, upbeat acoustic, bright vocals, heartfelt, modern groove"
+      };
+      const cleanTags = tagMappings[customGenre] || `${customGenre}, beautiful vocals, heartfelt`;
+
       const response = await fetch("/api/generate-suno", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: story,
-          tags: customGenre,
-          make_instrumental: false
+          tags: cleanTags,
+          make_instrumental: false,
+          wait_audio_ready: true
         })
       });
 
@@ -297,8 +309,16 @@ export default function App() {
       if (data && data.success && Array.isArray(data.audio_urls) && data.audio_urls.length > 0) {
         const liveTrackUrl = data.audio_urls[0];
         
-        // Map the live audio source track directly to our primary UI media player
+        // Map the live audio source track directly to our primary UI media player and play instantly
         setAudioUrl(liveTrackUrl);
+        setIsAudioPlaying(true);
+        if (audioRef.current) {
+          audioRef.current.src = liveTrackUrl;
+          audioRef.current.load();
+          audioRef.current.play().catch(e => console.warn("Playback exception handled gracefully:", e));
+        }
+
+        console.log("🎉 SUCCESS! Real Suno Neural Vocals Engine loaded successfully!");
 
         // Prepare dummy structured SongData to display metadata nicely in the player
         const customSongData: SongData = {
