@@ -23,6 +23,8 @@ export default function App() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [sunoStatus, setSunoStatus] = useState<"idle" | "generating" | "success" | "error">("idle");
+  const [sunoMessage, setSunoMessage] = useState("");
   const [setType, setSetType] = useState<SetType>("quick");
   const [customGenre, setCustomGenre] = useState("Acoustic Folk");
   const [gifterEmail, setGifterEmail] = useState("");
@@ -244,26 +246,42 @@ export default function App() {
       alert("Unauthorized: Access locked.");
       return;
     }
-
-    const email = (document.getElementById('test-target-email') as HTMLInputElement | null)?.value.trim() || "";
-    const customBlessing = (document.getElementById('test-story-context') as HTMLTextAreaElement | null)?.value.trim() || "";
     
-    if (!email || !customBlessing) {
+    const email = (document.getElementById('test-target-email') as HTMLInputElement | null)?.value.trim() || "";
+    const story = (document.getElementById('test-story-context') as HTMLTextAreaElement | null)?.value.trim() || "";
+    
+    if (!email || !story) {
       alert("Please fill in the target email and blessing story.");
       return;
     }
-
+    
+    const terminal = document.getElementById('sandbox-terminal');
+    const btn = document.getElementById('test-submit-btn') as HTMLButtonElement | null;
+    
+    if (btn) {
+      btn.disabled = true;
+      btn.innerText = "🎵 Connecting to Suno AI...";
+    }
+    
+    if (terminal) {
+      terminal.style.display = 'block';
+      terminal.innerHTML = `[SYSTEM] Starting real Suno generation for ${email}...<br>`;
+    }
+    
     setIsGenerating(true);
     setIsRendering(true);
-
+    setError("");
+    setSunoStatus("generating");
+    setSunoMessage("Connecting to live Suno AI engines... Crafting vocal arrangement tracks.");
+    
     try {
       const sunoApiKey = (import.meta as any).env.VITE_SUNO_API_KEY;
-      if (!sunoApiKey || sunoApiKey.length < 10) {
-        throw new Error("Suno API Key is missing or invalid. Please check your dashboard settings.");
+      if (!sunoApiKey || sunoApiKey.length < 15) {
+        throw new Error("Suno API Key missing. Please add VITE_SUNO_API_KEY=sk-... in your .env file");
       }
-
-      const selectedTheme = customGenre;
-
+      
+      if (terminal) terminal.innerHTML += `[API] Sending story to 302.ai Suno V5...<br>`;
+      
       const response = await fetch("https://api.302.ai/v1/suno/submit/music", {
         method: "POST",
         headers: {
@@ -271,23 +289,24 @@ export default function App() {
           "Authorization": `Bearer ${sunoApiKey}`,
         },
         body: JSON.stringify({
-          prompt: customBlessing,
-          tags: selectedTheme,
+          prompt: story,
+          tags: `${customGenre || 'Modern Worship'}, emotional, acoustic, christian worship, folk, ballad`,
           make_instrumental: false,
           wait_audio_ready: true
         }),
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Suno API ${response.status} - ${errorText}`);
+        throw new Error(`Suno API error: ${response.status}`);
       }
 
       const data = await response.json();
-      let liveTrackUrl = data.audio_url || data.url || (data.data && data.data[0]?.audio_url);
+      let liveTrackUrl = data.audio_url || data.url || 
+                         (data.data && data.data[0]?.audio_url) || 
+                         (Array.isArray(data) && data[0]?.audio_url);
 
       if (!liveTrackUrl) {
-        throw new Error("No audio URL returned from Suno");
+        throw new Error("No audio URL returned");
       }
 
       setAudioUrl(liveTrackUrl);
@@ -297,12 +316,46 @@ export default function App() {
         audioRef.current.play().catch(console.warn);
       }
       setIsAudioPlaying(true);
+      setSunoStatus("success");
+      setSunoMessage("Prophetic worship track successfully rendered! Streaming live audio.");
+
+      const customSongData: SongData = {
+        id: `suno-${Date.now()}`,
+        title: `Covenant Blessing for ${email}`,
+        target: email,
+        context: story,
+        setType: "quick",
+        tempo: "Peaceful Plucking (78 BPM)",
+        genre: customGenre || "Modern Worship",
+        artistIntro: `Halo kawanku! Haddi here with a special blessing for ${email}.`,
+        lyricSections: [{ sectionName: "Blessing", lines: [story.substring(0, 150)], chords: ["G", "C"], timestamps: [0, 12] }],
+        totalDurationSeconds: 120
+      };
+      setCurrentSong(customSongData);
+
+      if (terminal) {
+        terminal.innerHTML += `<span style="color:#2ecc71">[SUCCESS] Real Suno audio received!</span><br>`;
+      }
     } catch (err: any) {
       console.error(err);
-      alert(`Generation failed: ${err.message || err}`);
+      setError(err.message);
+      setSunoStatus("error");
+      setSunoMessage(`Suno Connection Error: ${err.message}`);
+      
+      if (terminal) {
+        terminal.innerHTML += `<span style="color:#e74c3c">[ERROR] ${err.message}</span><br>`;
+      }
+      const fallbackUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
+      setAudioUrl(fallbackUrl);
+      if (audioRef.current) audioRef.current.src = fallbackUrl;
+      setIsAudioPlaying(true);
     } finally {
       setIsGenerating(false);
       setIsRendering(false);
+      if (btn) {
+        btn.disabled = false;
+        btn.innerText = "🚀 Render Song & Send Digital Gift Card";
+      }
     }
   };
 
