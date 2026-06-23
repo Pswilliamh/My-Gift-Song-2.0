@@ -246,9 +246,9 @@ export default function App() {
     }
 
     const email = (document.getElementById('test-target-email') as HTMLInputElement | null)?.value.trim() || "";
-    const story = (document.getElementById('test-story-context') as HTMLTextAreaElement | null)?.value.trim() || "";
+    const customBlessing = (document.getElementById('test-story-context') as HTMLTextAreaElement | null)?.value.trim() || "";
     
-    if (!email || !story) {
+    if (!email || !customBlessing) {
       alert("Please fill in the target email and blessing story.");
       return;
     }
@@ -262,6 +262,8 @@ export default function App() {
         throw new Error("Suno API Key is missing or invalid. Please check your dashboard settings.");
       }
 
+      const selectedTheme = customGenre;
+
       const response = await fetch("https://api.302.ai/v1/suno/submit/music", {
         method: "POST",
         headers: {
@@ -269,8 +271,8 @@ export default function App() {
           "Authorization": `Bearer ${sunoApiKey}`,
         },
         body: JSON.stringify({
-          prompt: story,
-          tags: `${customGenre || 'Modern Worship'}, emotional, acoustic, christian worship, folk, ballad`,
+          prompt: customBlessing,
+          tags: selectedTheme,
           make_instrumental: false,
           wait_audio_ready: true
         }),
@@ -297,14 +299,7 @@ export default function App() {
       setIsAudioPlaying(true);
     } catch (err: any) {
       console.error(err);
-      // Dynamic fallback arrangement configuration
-      const fallbackUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
-      setAudioUrl(fallbackUrl);
-      if (audioRef.current) {
-        audioRef.current.src = fallbackUrl;
-        audioRef.current.play().catch(console.warn);
-      }
-      setIsAudioPlaying(true);
+      alert(`Generation failed: ${err.message || err}`);
     } finally {
       setIsGenerating(false);
       setIsRendering(false);
