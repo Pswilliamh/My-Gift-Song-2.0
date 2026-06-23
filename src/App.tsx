@@ -247,209 +247,67 @@ export default function App() {
 
     const email = (document.getElementById('test-target-email') as HTMLInputElement | null)?.value.trim() || "";
     const story = (document.getElementById('test-story-context') as HTMLTextAreaElement | null)?.value.trim() || "";
-    const terminal = document.getElementById('sandbox-terminal');
-    const btn = document.getElementById('test-submit-btn') as HTMLButtonElement | null;
     
     if (!email || !story) {
-      alert("Please fill in the target email and the blessing story to populate the system database rows.");
+      alert("Please fill in the target email and blessing story.");
       return;
     }
-    
-    if (btn) {
-      btn.disabled = true;
-      btn.style.background = '#7f8c8d';
-      btn.innerText = "Connecting Live Server...";
-    }
-    if (terminal) {
-      terminal.style.display = 'block';
-      terminal.innerHTML = `[SYSTEM]: Connecting to live Suno Audio Server...<br>`;
-      terminal.innerHTML += `[SYSTEM]: Custom style theme selected: "${customGenre}"<br>`;
-      terminal.innerHTML += `[SYSTEM]: Uploading 500-word Custom Blessing & Story array payload...<br>`;
-    }
 
-    // Stop baseline strumming loop before starting real live stream media
-    luteEngineInstance.stopLutePlayback();
-    setIsPlaying(false);
-
-    // Flip our generating loading state to active
     setIsGenerating(true);
     setIsRendering(true);
 
     try {
-      if (terminal) {
-        terminal.innerHTML += `[AI SERVER]: Transmitting story context prompt and starting generative audio compiler...<br>`;
+      const sunoApiKey = (import.meta as any).env.VITE_SUNO_API_KEY;
+      if (!sunoApiKey || sunoApiKey.length < 10) {
+        throw new Error("Suno API Key is missing or invalid. Please check your dashboard settings.");
       }
 
-      // 1. FORCE DIRECT URL ENDPOINT:
-      const directUrl = "https://api.302.ai/v1/suno/submit/music";
-
-      // 2. ATTACH THE HEADERS PACK:
-      const response = await fetch(directUrl, {
+      const response = await fetch("https://api.302.ai/v1/suno/submit/music", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer YOUR_ACTUAL_302_API_KEY_HERE"
+          "Authorization": `Bearer ${sunoApiKey}`,
         },
-        // 3. BODY CONTEXT PACKING:
         body: JSON.stringify({
           prompt: story,
-          tags: "Christian modern worship, beautiful acoustic pads, emotional slow tempo vocal arrangement",
-          make_instrumental: false
-        })
+          tags: `${customGenre || 'Modern Worship'}, emotional, acoustic, christian worship, folk, ballad`,
+          make_instrumental: false,
+          wait_audio_ready: true
+        }),
       });
 
       if (!response.ok) {
-        throw new Error(`Suno Server returned error status: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`Suno API ${response.status} - ${errorText}`);
       }
 
-      const resJson = await response.json();
+      const data = await response.json();
+      let liveTrackUrl = data.audio_url || data.url || (data.data && data.data[0]?.audio_url);
 
-      // Extract raw audio URLs carefully from output response
-      let urls: string[] = [];
-      if (Array.isArray(resJson)) {
-        urls = resJson.map((song: any) => song.audio_url || song.url).filter(Boolean);
-      } else if (resJson.audio_urls && Array.isArray(resJson.audio_urls)) {
-        urls = resJson.audio_urls;
-      } else if (resJson.data && Array.isArray(resJson.data)) {
-        urls = resJson.data.map((song: any) => song.audio_url || song.url).filter(Boolean);
-      } else if (resJson.audio_url) {
-        urls = [resJson.audio_url];
-      } else if (resJson.url) {
-        urls = [resJson.url];
+      if (!liveTrackUrl) {
+        throw new Error("No audio URL returned from Suno");
       }
 
-      if (urls.length === 0) {
-        throw new Error("No live audio URLs found in the response object.");
-      }
-
-      const liveTrackUrl = urls[0];
-
-      // 4. OVERRIDE THE ALERT DIALOG:
-      // If the network successfully receives a response containing data, set 'isProcessing' to true
-      setIsProcessing(true);
       setAudioUrl(liveTrackUrl);
-      setIsAudioPlaying(true);
-
       if (audioRef.current) {
         audioRef.current.src = liveTrackUrl;
         audioRef.current.load();
-        audioRef.current.play().catch(e => console.warn("Playback exception handled gracefully:", e));
+        audioRef.current.play().catch(console.warn);
       }
-
-      console.log("🎉 SUCCESS! Real Suno Neural Vocals Engine loaded successfully!");
-
-      // Prepare dummy structured SongData to display metadata nicely in the player
-      const customSongData: SongData = {
-        id: `sandbox-${Date.now()}`,
-        title: `Covenant Blessing for ${email}`,
-        target: email,
-        context: story,
-        setType: "quick",
-        tempo: "Peaceful Plucking (78 BPM)",
-        genre: customGenre,
-        artistIntro: `Halo kawanku! Greet you with Sumatra soul. We have compiled a high-fidelity blessing for you.`,
-        lyricSections: [
-          {
-            sectionName: "Blessing",
-            lines: [
-              story.substring(0, 100) || "May His Grace and Covenant cover your pathway,",
-              story.substring(100, 200) || "Walking under the holy Anointing and Divine Purpose."
-            ],
-            chords: ["G", "C"],
-            timestamps: [0, 8]
-          }
-        ],
-        totalDurationSeconds: 120
-      };
-      setCurrentSong(customSongData);
-
-      if (terminal) {
-        terminal.innerHTML += `<span style='color: #2ecc71; font-weight: bold;'>[SUCCESS]: Live Suno Audio Server successfully returned a high-fidelity track!</span><br>`;
-        terminal.innerHTML += `[INFO]: Mapping live audio track to primary UI media player:<br><code style='word-break: break-all; color: #FFD700;'>${liveTrackUrl}</code><br>`;
-        terminal.innerHTML += `<br><span style='color: #FFD700; font-weight: bold;'>🎉 SUCCESS! The sandbox has successfully broken out of the strumming loop. The live audio stream is online! (Style: ${customGenre})</span>`;
-      }
-
-      // Target the media player explicitly and programmatically play
-      const player = document.getElementById("suno-audio-player") as HTMLAudioElement | null;
-      if (player) {
-        player.src = liveTrackUrl;
-        player.load();
-        player.play().catch(e => console.warn("Auto-playback on success prevented or interrupted:", e));
-      }
-
-    } catch (err: any) {
-      console.error("[Sandbox Suno] Generation failed:", err);
-
-      // Only pop up the mapping alert if a strict network failure occurs
-      alert("⚠️ Admin Notice: Suno API endpoint path requires mapping adjustment.");
-
-      if (terminal) {
-        terminal.innerHTML += `<span style='color: #e74c3c;'>[ERROR]: Direct Suno server error: ${err.message || err}. Falling back to default high-fidelity track.</span><br>`;
-      }
-      
-      // Dynamic fallback to make sure audio is always playable
-      const fallbackUrls: Record<string, string> = {
-        "Acoustic Folk": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-        "Bluegrass": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-        "Rustic Lute": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-        "Modern Worship": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
-        "Lofi Acoustic": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
-        "Indie Pop": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3"
-      };
-      const fallbackUrl = fallbackUrls[customGenre] || "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
-      setAudioUrl(fallbackUrl);
       setIsAudioPlaying(true);
+    } catch (err: any) {
+      console.error(err);
+      // Dynamic fallback arrangement configuration
+      const fallbackUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
+      setAudioUrl(fallbackUrl);
       if (audioRef.current) {
         audioRef.current.src = fallbackUrl;
-        audioRef.current.load();
-        audioRef.current.play().catch(e => console.warn("Fallback playback exception handled gracefully:", e));
+        audioRef.current.play().catch(console.warn);
       }
-
-      // Target the media player explicitly and programmatically play on fallback
-      const player = document.getElementById("suno-audio-player") as HTMLAudioElement | null;
-      if (player) {
-        player.src = fallbackUrl;
-        player.load();
-        player.play().catch(e => console.warn("Auto-playback on fallback prevented or interrupted:", e));
-      }
-      
-      const customSongData: SongData = {
-        id: `sandbox-${Date.now()}`,
-        title: `Covenant Blessing for ${email}`,
-        target: email,
-        context: story,
-        setType: "quick",
-        tempo: "Peaceful Plucking (78 BPM)",
-        genre: customGenre,
-        artistIntro: `Halo kawanku! Greet you with Sumatra soul. We have compiled a high-fidelity blessing for you.`,
-        lyricSections: [
-          {
-            sectionName: "Blessing",
-            lines: [
-              story.substring(0, 100) || "May His Grace and Covenant cover your pathway,",
-              story.substring(100, 200) || "Walking under the holy Anointing and Divine Purpose."
-            ],
-            chords: ["G", "C"],
-            timestamps: [0, 8]
-          }
-        ],
-        totalDurationSeconds: 120
-      };
-      setCurrentSong(customSongData);
-
-      if (terminal) {
-        terminal.innerHTML += `<br><span style='color: #FFD700; font-weight: bold;'>🎉 SUCCESS! Fallen back to high-fidelity audio stream. (Theme: ${customGenre})</span>`;
-      }
+      setIsAudioPlaying(true);
     } finally {
-      // Flip our loading state to 'success' (isGenerating = false, isRendering = false)
       setIsGenerating(false);
       setIsRendering(false);
-
-      if (btn) {
-        btn.disabled = false;
-        btn.style.background = '#2ecc71';
-        btn.innerText = "🚀 Render Song & Send Digital Gift Card";
-      }
     }
   };
 
